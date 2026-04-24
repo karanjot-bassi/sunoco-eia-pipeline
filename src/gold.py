@@ -1,22 +1,16 @@
+# Author: Karanjot Bassi
+
 import pandas as pd
 from src.config import SILVER_DIR, GOLD_DIR
 
 
 def run_gold() -> pd.DataFrame:
-    """
-    Load silver data.
-    Compute annual averages per series.
-    Pivot to wide format: one row per year, one column per series.
-    Only include years with complete data across all major series.
-    Saves to gold layer.
-    """
+    """Aggregate silver data to annual averages and pivot to wide format. Saves to gold layer."""
     silver_path = SILVER_DIR / "distillate_padd3_long.csv"
     df = pd.read_csv(silver_path, parse_dates=["period"])
 
-    # Extract year from period
     df["year"] = df["period"].dt.year
 
-    # Compute annual average per series per year
     annual = (
         df.groupby(["year", "series_name"])["value_mbbl_d"]
         .mean()
@@ -24,8 +18,6 @@ def run_gold() -> pd.DataFrame:
         .rename(columns={"value_mbbl_d": "annual_avg_mbbl_d"})
     )
 
-    # Pivot to wide format
-    # Rows = years, columns = series names
     gold = annual.pivot(
         index="year",
         columns="series_name",
@@ -35,7 +27,6 @@ def run_gold() -> pd.DataFrame:
     gold = gold.reset_index()
     gold = gold.sort_values("year").reset_index(drop=True)
 
-    # Save
     GOLD_DIR.mkdir(parents=True, exist_ok=True)
     out_path = GOLD_DIR / "distillate_padd3_annual.csv"
     gold.to_csv(out_path, index=False)

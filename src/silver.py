@@ -1,3 +1,5 @@
+# Author: Karanjot Bassi
+
 import json
 import pandas as pd
 from pathlib import Path
@@ -5,10 +7,7 @@ from src.config import BRONZE_DIR, SILVER_DIR, ALL_SERIES
 
 
 def load_bronze_series(name: str) -> pd.DataFrame:
-    """
-    Load one bronze JSON file.
-    Returns DataFrame with columns: period, series_name, value_mbbl_d
-    """
+    """Load one bronze JSON file and extract period and value columns."""
     safe_name = name.replace(" ", "_").replace("/", "_").lower()
     path = BRONZE_DIR / f"{safe_name}.json"
 
@@ -28,13 +27,7 @@ def load_bronze_series(name: str) -> pd.DataFrame:
 
 
 def clean_series(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Clean and normalize one series DataFrame.
-    - Parse period to datetime
-    - Cast value to float
-    - Drop rows with null values
-    - Sort by period ascending
-    """
+    """Parse period to datetime, cast value to float, drop nulls, sort ascending."""
     df = df.copy()
     df["period"] = pd.to_datetime(df["period"], format="%Y-%m")
     df["value_mbbl_d"] = pd.to_numeric(df["value_mbbl_d"], errors="coerce")
@@ -45,11 +38,7 @@ def clean_series(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_silver() -> pd.DataFrame:
-    """
-    Load all bronze series, clean, combine into one long/tidy DataFrame.
-    One row per month per series.
-    Saves to silver layer.
-    """
+    """Clean all bronze series and concatenate into a long-format CSV at the silver layer."""
     frames = []
 
     for name in ALL_SERIES.keys():

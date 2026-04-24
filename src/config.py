@@ -1,3 +1,5 @@
+# Author: Karanjot Bassi
+
 from pathlib import Path
 
 # Project root

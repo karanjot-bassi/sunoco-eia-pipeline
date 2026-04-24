@@ -1,3 +1,5 @@
+# Author: Karanjot Bassi
+
 import os 
 import json 
 import requests
@@ -7,14 +9,12 @@ from src.config import EIA_BASE_URL, BRONZE_DIR, ALL_SERIES, START_DATE
 
 load_dotenv()
 
-# Fetch one EIA series 
-# Returns full JSON response as a dict
-# Raises in non-200 response.
 def fetch_series(api_key: str, series_id: str) -> dict:
+    """Call EIA v2 API for one series. Raises on non-200 response."""
     url = f"{EIA_BASE_URL}/{series_id}"
     params = {
         "api_key": api_key,
-        "length": 5000,  # request up to 5000 records
+        "length": 5000,
         "offset": 0,
     }
     response = requests.get(url, params=params, timeout=30)
@@ -22,18 +22,17 @@ def fetch_series(api_key: str, series_id: str) -> dict:
     return response.json()
 
 
-# Filter response data, include periods >= start date
-# api returns news first
 def filter_by_start_date(raw: dict, start: str) -> dict:
+    """Drop records before start date and sort oldest first. EIA returns newest first by default."""
     records = raw.get("response", {}).get("data", [])
     filtered = [r for r in records if r["period"] >= start]
     filtered.sort(key=lambda x: x["period"])
     raw["response"]["data"] = filtered
     return raw
 
-# save raw API response to bronze layer as JSON
-# No transformation
+
 def save_bronze(name: str, payload: dict) -> Path:
+    """Write raw API response to data/bronze/ as JSON with no transformations."""
     BRONZE_DIR.mkdir(parents=True, exist_ok=True)
     safe_name = name.replace(" ", "_").replace("/", "_").lower()
     path = BRONZE_DIR / f"{safe_name}.json"
@@ -43,6 +42,7 @@ def save_bronze(name: str, payload: dict) -> Path:
 
 
 def run_bronze():
+    """Fetch all 7 EIA series and save to bronze layer. Skips any series returning 0 records."""
     api_key = os.environ.get("EIA_API_KEY")
     if not api_key:
         raise EnvironmentError("EIA_API_KEY not set in environment.")
